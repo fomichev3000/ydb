@@ -1,8 +1,5 @@
 # YDB: история развития и актуальная дорожная карта
 
-**Срез: 15 ноября 2026 года.** Внутренний рабочий документ, восстановленный по Wiki, Tracker и документации в этом checkout. Это сводка существующих планов и результатов, а не новое обязательство команд по срокам.
-
-Исходная точка — [ROADMAP.md](ROADMAP.md). Метки ㉓ и ㉔ в нём означают год **появления в плане**, а не год реализации. Например, версия **24.4.4.2 вышла 15 апреля 2025 года**, а 25.2.1.26 — 12 мая 2026 года. Ни номер ветки, ни дата закрытия эпика сами по себе не являются датой публичного выпуска. Даты релизов ниже взяты из [списка изменений сервера][releases].
 
 ## Как читать статусы
 
@@ -194,84 +191,15 @@
 
 Таблица охватывает все содержательные пункты без ✅/❌ и старые частично выполненные пункты. Изначально завершённые позиции не отменялись без доказательств регрессии. Там, где результат подтверждён лишь частично, оригинал не превращён в безусловное «released». Ссылки на источники для групп приведены в последнем столбце; версии — из release notes, а не выведены из года метки ㉓/㉔.
 
-### Query Processor
-
-| Исходный пункт | Состояние на дату среза | Основание / граница |
-|---|---|---|
-| Unique secondary indexes | ✅ Базовая функциональность; онлайн-построение v2 — 🧪 | [KIKIMR-8192](https://st.yandex-team.ru/KIKIMR-8192); [KIKIMR-25653](https://st.yandex-team.ru/KIKIMR-25653); [release notes][releases]. |
-| Apply indexes automatically | ✅ | 24.4.4.2; [KIKIMR-10864](https://st.yandex-team.ru/KIKIMR-10864) закрыт. Cost-based выбор в новом CBO — дальнейшее развитие. |
-| Default values | ✅ Константные DEFAULT | 24.3; расширения ADD/ALTER COLUMN в 26.1/26.2. Произвольные expressions остаются в [QP roadmap][qp]. |
-| Asynchronous LLVM JIT | ❓ Полное выполнение исходного обещания не установлено | LLVM существует, есть исправления и отдельные открытые задачи; это не доказательство именно асинхронной JIT-компиляции. |
-| Optional DECLARE | ✅ | 25.1.2.7 RC, далее стабильная 25.1.4.18. [Release notes][releases]. |
-| Cost-based optimizer | ✅ Базовый аналитический CBO; 🚧 новые этапы | 25.2, [Optimizer roadmap][optimizer]. |
-| INSERT…SELECT for large datasets | 🚧 | Операции поддержаны, но снятие лимитов больших записей остаётся в [QP][qp]/[CS][cs]. |
-| Transactional writes row+column | 🚧 Не выпущено в исходном полном объёме | [Документированное ограничение смешанной записи][mixed-tx]. |
-| Computed columns | 🧪 Под флагами, обе реализации inProgress | [YDBFEATURES-228](https://st.yandex-team.ru/YDBFEATURES-228), [229](https://st.yandex-team.ru/YDBFEATURES-229). |
-| Temporary tables | 🧪 Подтверждена PG-реализация; общая YQL-доступность не установлена | [KIKIMR-17960](https://st.yandex-team.ru/KIKIMR-17960) закрыт; [QP Monthly, с. 5][qp-monthly]. |
-| VIEW | ✅ | 24.3 под флагом, 24.4 по умолчанию; старый [KIKIMR-19567](https://st.yandex-team.ru/KIKIMR-19567) всё ещё `inProgress`. |
-| Data spilling | ✅ Дисковый spilling; 🚧 развитие операторов/квот | 25.2; [Runtime][runtime]. |
-| TPC-H и TPC-DS 100 TB | 🚧 Полный объединённый критерий не подтверждён | В [QP][qp] отмечена готовность TPCH 10/100 TB, но это не завершение TPCDS 100 TB. Не смешивать размер данных с числом корректных запросов. |
-| Better KQP resource management | 🚧 | [YDBFEATURES-54](https://st.yandex-team.ru/YDBFEATURES-54), [252](https://st.yandex-team.ru/YDBFEATURES-252), [253](https://st.yandex-team.ru/YDBFEATURES-253). |
-| PostgreSQL query execution | 🚧 | [YDB-2975](https://st.yandex-team.ru/YDB-2975), [QP Monthly][qp-monthly]. Wire protocol ≠ совместимость приложений. |
-| Single database connection string | ❓ | Факт поддержки отдельных connection-string интерфейсов не доказывает завершение исходного универсального пункта для всех клиентов. |
-| Constraints in query optimizer | 🚧/❓ Полный scope не определён | Новый оптимизатор реализует отдельные преобразования; общего критерия завершения исходной формулировки не найдено. [Optimizer][optimizer]. |
-| Streaming Lookup Join | 🧪 Реализация/включение отмечены выполненными, 25.3.1 | [QP roadmap][qp]; общий rollout не восстановлен по релизам. |
-| Universal ExecuteQuery | ✅ Базовый QueryService/ExecuteQuery; 🚧 дальнейшее объединение сценариев | В 24.1 описан QueryService для DML/DDL с неограниченными результатами. [Release notes][releases], [QP][qp]. Смешанный DDL+DML в одном запросе остаётся отдельной задачей. |
-| RPC Deadline & Cancellation propagation | 🚧 | Для storage PUT/GET протяжка deadline отмечена в prod в [DS][ds]; end-to-end завершение всех API/операторов не установлено. |
-
-### Core, Topics и системные механизмы
-
-| Исходный пункт | Состояние на дату среза | Основание / граница |
-|---|---|---|
-| ANN vector search | ✅ | 25.1/25.2; новые виды индексов — последующие планы. [Release notes][releases]. |
-| Volatile transactions | ✅ | По умолчанию в 24.4.4.2. Позднее закрытие [KIKIMR-16341](https://st.yandex-team.ru/KIKIMR-16341) не переносит дату выпуска в 2026. |
-| Table statistics | ✅ Базовые статистики; 🚧 развитие | [ANALYZE/CREATE TABLE][create-table], [KIKIMR-25621](https://st.yandex-team.ru/KIKIMR-25621), [26267](https://st.yandex-team.ru/KIKIMR-26267). |
-| Memory optimization row tables | ✅ Выгружаемые B-tree-индексы; 🚧 общая оптимизация памяти | 25.1; [release notes][releases]. |
-| Minimum two cores per node | 🧪 Подтверждено для testing, не общий production sizing | Строка «Про работу на 2-х ядрах для тестинга», код в prod, в [DS][ds]. |
-| Incremental backup + PITR | 🧪/📌 Разделено на разные этапы | [KIKIMR-27150](https://st.yandex-team.ru/KIKIMR-27150), [18552](https://st.yandex-team.ru/KIKIMR-18552); 26.2 под флагом. |
-| ALTER CHANGEFEED | 🚧 Retention реализован, общий зонтик открыт | 24.3; [KIKIMR-20285](https://st.yandex-team.ru/KIKIMR-20285). |
-| Async replication column tables/topics | ❓ Полный объём не подтверждён | Репликация служебного автопартиционированного CDC-топика не равна поддержке произвольных Topics/CS. [Матрица репликации](https://st.yandex-team.ru/KIKIMR-27545), [CS][cs]. |
-| Async replication schema changes | 🚧 | [KIKIMR-25813](https://st.yandex-team.ru/KIKIMR-25813), [25730](https://st.yandex-team.ru/KIKIMR-25730), [27574](https://st.yandex-team.ru/KIKIMR-27574). |
-| Debezium format | 🚧 Базовый формат существует | [CDC docs][cdc]; [KIKIMR-19582](https://st.yandex-team.ru/KIKIMR-19582) открыт. |
-| Topics autoscaling increase/decrease | 🚧 Split выпущен, merge/scale-down — план | [Release notes][releases]; [LOGBROKER-10478](https://st.yandex-team.ru/LOGBROKER-10478). |
-| Extended Kafka API | 🚧 Значительное расширение выпущено; полный исходный v19-критерий отдельно не подтверждён | [Release notes 25.1/25.2][releases]; текущие Kafka-задачи в [H2-фильтре](https://st.yandex-team.ru/issues/562856?_view=list). |
-| Topic schemas | 📌 | [LOGBROKER-7913](https://st.yandex-team.ru/LOGBROKER-7913), кандидат H2. |
-| Message-level parallelism | 📌/❓ Выпуск не подтверждён | [План 2025][plan-2025], [Helicopter 2026][helicopter]. |
-| First async replication, row tables | ✅ | 24.3; [KIKIMR-12336](https://st.yandex-team.ru/KIKIMR-12336). |
-| Extend State Storage online | 🧪 Код/этап testing подтверждены | [DS roadmap][ds]. Полный rollout без остановки всего флота не установлен. |
-| Split/Merge DataShards BY LOAD by default | 🚧/❓ Автосплит реализован, универсальный default не установлен | [KIKIMR-3690](https://st.yandex-team.ru/KIKIMR-3690) закрыт; [DataShard H2][datashard] содержит дальнейшую работу. |
-| Basic histogram | 🧪/🚧 Реализованы конкретные гистограммы; общий rollout не установлен | [KIKIMR-26443](https://st.yandex-team.ru/KIKIMR-26443) закрыт; [DataShard H2][datashard]. |
-| Data ingestion topic→table | ✅ Трансферы | 25.2; [release notes][releases]. |
-| Snapshot read over read replicas | ❓ Исходный согласованный snapshot-сценарий не подтверждён | Stale Read-Only на репликах не равен этому требованию. [Документация транзакций][transactions]. |
-| Transactions topics↔tables | ✅ | По умолчанию в 24.4.4.2; [release notes][releases]. |
-| Tracing capabilities | ✅ Базовая трассировка; 🧪 новые user-facing spans | 24.3; [YDBFEATURES-238](https://st.yandex-team.ru/YDBFEATURES-238). |
-| Automatic tablet-channel balance across groups | 🚧 Полный исходный критерий не закрыт | Автобалансировка хранения в 26.2 не доказывает завершение всех механизмов Hive/channels: соответствующий пункт остаётся в [Core][core]. |
-| Avoid NodeBroker SPF | 🚧 Узкий результат подтверждён | 72 часа Data Plane: [KIKIMR-25710](https://st.yandex-team.ru/KIKIMR-25710); общий аварийный режим [25732](https://st.yandex-team.ru/KIKIMR-25732) — в работе. NBS-специфическая гарантия отдельно не проверена. |
-| SchemeBoard subscriptions | ❓ | Наличие подписок и задач по их оптимизации не доказывает закрытие исходного rollout-пункта. |
 
 ### Security, BlobStorage, аналитика и тесты
 
 | Исходный пункт | Состояние на дату среза | Основание / граница |
 |---|---|---|
-| OIDC | 🧪 | RC 26.3; [release notes][releases]. |
-| KeyCloak authentication | ❓ Полный продуктовый сценарий не установлен | Не приравнен к OIDC либо к запуску самого Keycloak поверх YDB. [Security H2][security]. |
-| SASL framework | 🚧 Конкретный SCRAM-SHA-256 реализован | [KIKIMR-24270](https://st.yandex-team.ru/KIKIMR-24270); общий перечень механизмов не закрыт. |
 | BlobStorage p999/CPU | 🚧 Постоянное развитие | [DS roadmap][ds]; [план H2](https://st.yandex-team.ru/KIKIMR-26529). |
 | ActorSystem performance | 🚧 Постоянное развитие | [DS roadmap][ds]. |
 | ActorSystem ARM | ❓ Общая production-ready готовность не установлена | В [QP][qp] ARM production-ready остаётся незавершённым пунктом; узкие оптимизации не равны завершению. |
-| Effortless initial deployment | 🚧 V2/distconf существуют, продуктовый rollout продолжается | [DS][ds], [Ops H2][ops-h2], [V2 migration][v2-process]. |
-| Reduce/remove BlobStorage groups | 🚧 | RC 26.3 и [KIKIMR-25733](https://st.yandex-team.ru/KIKIMR-25733) в работе. |
-| One-leg migration without downtime | ❓ | Полный критерий исходного сценария переноса 1/3 mirror3-dc не подтверждён найденными источниками. |
-| Self-Heal degraded groups | 🚧 Противоречивые источники | Закрытый [KIKIMR-17991](https://st.yandex-team.ru/KIKIMR-17991), но блокирующая пометка в [DS][ds]; безусловный ✅ не поставлен. |
-| BlobDepot | 🚧 MVP и частные применения есть | [DS][ds]; [KIKIMR-25733](https://st.yandex-team.ru/KIKIMR-25733). |
-| Avoid BSC SPF | 🚧 P2P/кэши реализованы, общий критерий шире | [KIKIMR-11324](https://st.yandex-team.ru/KIKIMR-11324); [DS][ds]. |
-| BSC manages static group | 🚧/❓ Есть автоматика, но не доказана именно исходная архитектура через BSC | Distconf/автоматика статической группы в [DS][ds] не автоматически равны этому обещанию. |
-| Hard disk-space separation | ❓ | Исходные гарантии изоляции VDisk/PDisk отдельно не подтверждены. |
-| Reduce space amplification | 🚧 | Продолжаются оптимизации CS/DS, но нет единого критерия закрытия исходного пункта. [Analytics 2026][analytics-2026], [DS][ds]. |
-| CS backup | 🧪 | 26.2 под флагом, 26.3 RC; [release notes][releases]. |
-| CS autosharding | 📌 | Отсутствие автоматического репартиционирования явно описано в [CREATE TABLE][create-table]. |
-| Log Store: 1+ million tables | 🚧/❓ Базовый механизм не доказывает заявленный масштаб | В [CS][cs] ColumnStore и дальнейшее масштабирование ещё задачи; миллион таблиц не верифицирован. |
-| Column-oriented tables | ✅ Базовая аналитика выпущена | 25.2; зрелость отдельных сценариев остаётся предметом дальнейшего плана. [Release notes][releases]. |
+
 | Tiered storage CS in S3 | 🚧 Внутреннее применение ≠ общий публичный продукт | [CS roadmap][cs], [Analytics 2026][analytics-2026]. |
 | Built-in DataShard YCSB load | ❓ Точный исходный встроенный механизм не подтверждён | Наличие CLI/workload/CI-прогонов YCSB не приравнено к built-in нагрузке на DataShard. |
 
